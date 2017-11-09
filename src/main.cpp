@@ -16,6 +16,8 @@ char mqtt_server[]="m12.cloudmqtt.com";
 const int led=16;
 const int button=0 ;
 const int sensor=12;
+int cronometro=0;
+String estado_foco;
 WiFiClient espClient;
 WiFiClient telnet;
 WiFiServer server(23);
@@ -164,22 +166,24 @@ void callback(char* topic, byte* payload, unsigned int length){
     root2.printTo(JSON);
     const char *payload = JSON.c_str();
 
+    estado_foco="Encendido";
     digitalWrite(led,LOW);
     telnet.println("prender");
     Serial.println("prender");
-    client.publish("foco_estado", payload);
+    client.publish("foco_cambio", payload);
   }
   else{
-
-    root["status"] = "false";
+    root2["status"] = "false";
     String JSON;
-    root.printTo(JSON);
+    root2.printTo(JSON);
     const char *payload = JSON.c_str();
+
+    estado_foco="Apagado";
 
     digitalWrite(led, HIGH);
     telnet.println("apagar");
     Serial.println("apagar");
-    client.publish("foco_estado", payload);
+    client.publish("foco_cambio", payload);
   }
 
 }
@@ -207,6 +211,8 @@ void setup(){
   Serial.begin(115200);
   Serial.println();
   Serial.println("proceso inicializado");
+  estado_foco="Apagado";
+
   if(!SPIFFS.begin()){
     Serial.println("no se pudo montar FS");
     return;
@@ -216,6 +222,7 @@ void setup(){
   }
 
   pinMode(led,OUTPUT);
+  digitalWrite(led, HIGH);
   pinMode(sensor,INPUT);
   pinMode(button,INPUT);
   loadConfig();
@@ -248,8 +255,21 @@ void loop(){
   Serial.print("-");
   /*digitalWrite(led,LOW);
   delay(500);
-  digitalWrite(led,HIGH);
-  delay(500);*/
+  digitalWrite(led,HIGH);*/
+  delay(500);
+  cronometro++;
+  if(cronometro==20){
+    cronometro=0;
+
+    StaticJsonBuffer<100> jsonBufferRoot;
+    JsonObject &root2 = jsonBufferRoot.createObject();
+
+    root2["status"] = estado_foco;
+    String JSON;
+    root2.printTo(JSON);
+    const char *payload = JSON.c_str();
+    client.publish("foco_estado", payload);
+  }
   if(digitalRead(button)==LOW){
     Serial.println("force config mode");
     //forceConfigMode();
@@ -261,13 +281,13 @@ void loop(){
   }
   client.loop();
 
-  if(digitalRead(sensor)==LOW){
+  /*if(digitalRead(sensor)==LOW){
     telnet.println("HIGH");
     delay(500);
   }
   else{
     telnet.println("LOW");
     delay(500);
-  }
+  }*/
 
 }
