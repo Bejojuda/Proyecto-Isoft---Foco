@@ -4,7 +4,6 @@
 #include <PubSubClient.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
-
 #include "FS.h"
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
@@ -14,7 +13,7 @@ const char* ssid="TORRES PEREZ";
 const char* password="0008151964";
 char mqtt_server[]="m12.cloudmqtt.com";
 const int led=16;
-const int button=0 ;
+const int button=0;
 const int sensor=12;
 int cronometro=0;
 String estado_foco;
@@ -253,9 +252,6 @@ void setup(){
 void loop(){
   //Serial.println(flashCorrectlyConfigured);
   Serial.print("-");
-  /*digitalWrite(led,LOW);
-  delay(500);
-  digitalWrite(led,HIGH);*/
   delay(500);
   cronometro++;
   if(cronometro==20){
@@ -270,10 +266,10 @@ void loop(){
     const char *payload = JSON.c_str();
     client.publish("foco_estado", payload);
   }
-  if(digitalRead(button)==LOW){
+  /*if(digitalRead(button)==LOW){
     Serial.println("force config mode");
     //forceConfigMode();
-  }
+  }*/
   handleTelnet();
   ArduinoOTA.handle();
   if(!client.connected()){
