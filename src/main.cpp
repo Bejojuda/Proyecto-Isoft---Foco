@@ -160,7 +160,7 @@ void callback(char* topic, byte* payload, unsigned int length){
 
   if(status){
 
-    root2["status"] = "true";
+    root2["status"] = true;
     String JSON;
     root2.printTo(JSON);
     const char *payload = JSON.c_str();
@@ -172,7 +172,7 @@ void callback(char* topic, byte* payload, unsigned int length){
     client.publish("foco_cambio", payload);
   }
   else{
-    root2["status"] = "false";
+    root2["status"] = false;
     String JSON;
     root2.printTo(JSON);
     const char *payload = JSON.c_str();
@@ -254,15 +254,19 @@ void loop(){
   Serial.print("-");
   delay(500);
   cronometro++;
-  if(cronometro==20){
+  if(cronometro==10){
     cronometro=0;
 
     StaticJsonBuffer<100> jsonBufferRoot;
-    JsonObject &root2 = jsonBufferRoot.createObject();
-
-    root2["status"] = estado_foco;
+    JsonObject &root = jsonBufferRoot.createObject();
+    if(estado_foco=="Encendido"){
+      root["status"] = true;
+    }
+    else{
+      root["status"] = false;
+    }
     String JSON;
-    root2.printTo(JSON);
+    root.printTo(JSON);
     const char *payload = JSON.c_str();
     client.publish("foco_estado", payload);
   }
