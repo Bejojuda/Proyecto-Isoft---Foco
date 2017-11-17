@@ -9,12 +9,12 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
 
-const char* ssid="TORRES PEREZ";//Progsistemas
-const char* password="0008151964";//scndsemsept17
+const char* ssid="Progsistemas";//TORRES PEREZ
+const char* password="scndsemsept17";//0008151964
 char mqtt_server[]="m12.cloudmqtt.com";
 const int foco=16;
 int cronometro=0;
-String estado_foco;
+bool estado_foco;
 WiFiClient espClient;
 WiFiServer server(23);
 PubSubClient client(espClient);
@@ -148,7 +148,7 @@ void callback(char* topic, byte* payload, unsigned int length){
     root2.printTo(JSON);
     const char *payload = JSON.c_str();
 
-    estado_foco="Encendido";
+    estado_foco=true;
     digitalWrite(foco,LOW);
     Serial.println("prender");
     client.publish("foco_cambio", payload);
@@ -159,7 +159,7 @@ void callback(char* topic, byte* payload, unsigned int length){
     root2.printTo(JSON);
     const char *payload = JSON.c_str();
 
-    estado_foco="Apagado";
+    estado_foco=false;
 
     digitalWrite(foco, HIGH);
     Serial.println("apagar");
@@ -187,11 +187,30 @@ void reconnect(){
   }
 }
 
+void mensaje_inactivo(){
+  cronometro++;
+  if(cronometro==10){
+    cronometro=0;
+    StaticJsonBuffer<100> jsonBufferRoot;
+    JsonObject &root = jsonBufferRoot.createObject();
+    if(estado_foco){
+      root["status"] = true;
+    }
+    else{
+      root["status"] = false;
+    }
+    String JSON;
+    root.printTo(JSON);
+    const char *payload = JSON.c_str();
+    client.publish("foco_estado", payload);
+  }
+}
+
 void setup(){
   Serial.begin(115200);
   Serial.println();
   Serial.println("proceso inicializado");
-  estado_foco="Apagado";
+  estado_foco=false;
 
   if(!SPIFFS.begin()){
     Serial.println("no se pudo montar FS");
@@ -204,15 +223,6 @@ void setup(){
   pinMode(foco,OUTPUT);
   digitalWrite(foco, HIGH);
   loadConfig();
-
-  //WiFiManager wifiManager;
-  /*wifiManager.setSaveConfigCallback(saveConfigCallback);
-
-  WiFiManagerParameter customMqttServer("mqtt_server","mqtt server",mqtt_server,15);
-  wifiManager.addParameter(&customMqttServer);
-
-  wifiManager.autoConnect("esp-SEMARD","0008151964");
-  strcpy(mqtt_server,customMqttServer.getValue());/**/
 
   if(shouldSaveConfig){
     saveConfig();
@@ -231,22 +241,9 @@ void setup(){
 void loop(){
   Serial.print("-");
   delay(500);
-  cronometro++;
-  if(cronometro==10){
-    cronometro=0;
-    StaticJsonBuffer<100> jsonBufferRoot;
-    JsonObject &root = jsonBufferRoot.createObject();
-    if(estado_foco=="Encendido"){
-      root["status"] = true;
-    }
-    else{
-      root["status"] = false;
-    }
-    String JSON;
-    root.printTo(JSON);
-    const char *payload = JSON.c_str();
-    client.publish("foco_estado", payload);
-  }
+
+  mensaje_inactivo();
+
   ArduinoOTA.handle();
   if(!client.connected()){
     reconnect();
